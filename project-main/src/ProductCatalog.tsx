@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Cigarette as Cigar, ShoppingCart, Check, Search, Filter, Plus, Minus, ChevronLeft } from 'lucide-react';
+import { Cigarette as Cigar, ShoppingCart, Check, Search, Filter, Plus, Minus, ChevronLeft, ChevronDown, ChevronUp } from 'lucide-react';
 import { useCurrency } from './contexts/CurrencyContext';
 import { useCart } from './contexts/CartContext';
 import Footer from './components/Footer';
+import CartIcon from './components/CartIcon';
 
 interface Product {
   id: number;
@@ -21,13 +22,17 @@ interface Product {
 
 const ProductCatalog: React.FC = () => {
   const { formatPrice } = useCurrency();
-  const { cartCount, addToCart } = useCart();
+  const { cartCount, addToCart, items: cartItems } = useCart();
   const [quantities, setQuantities] = useState<{ [key: number]: number }>({});
   const [addedToCart, setAddedToCart] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedOrigin, setSelectedOrigin] = useState<string>('all');
   const [selectedStrength, setSelectedStrength] = useState<string>('all');
+  const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState<'price-asc' | 'price-desc' | 'rating'>('price-asc');
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
 
   const products: Product[] = [
     {
@@ -149,10 +154,10 @@ const ProductCatalog: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
-              <Link to="/" className="flex items-center space-x-2">
+              <Link to="/" className="flex items-center space-x-2 hover:text-amber-500 transition-colors">
                 <img src="/logo.png" alt="Stogie's" className="h-8 w-8 rounded-full shadow-md" />
+                <h1 className="text-xl font-bold tracking-wider">STOGIE'S</h1>
               </Link>
-              <h1 className="text-xl font-bold">STOGIE'S</h1>
             </div>
             <div className="flex items-center space-x-4">
               <Link to="/products" className="text-gray-300 hover:text-amber-500 transition-colors tracking-widest font-medium">
@@ -162,16 +167,7 @@ const ProductCatalog: React.FC = () => {
                 Accessories
               </Link>
               <Link to="/cart" className="relative">
-                <ShoppingCart className="w-6 h-6 text-gray-300 hover:text-amber-500 transition-colors" />
-                {cartCount > 0 && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute -top-2 -right-2 bg-amber-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
-                  >
-                    {cartCount}
-                  </motion.div>
-                )}
+                <CartIcon />
               </Link>
             </div>
           </div>
@@ -234,6 +230,18 @@ const ProductCatalog: React.FC = () => {
                 </select>
               </div>
             </div>
+          </div>
+
+          <div className="flex justify-between items-center mb-8">
+            <span className="text-gray-400">Items in cart: {cartItems.length}</span>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center space-x-2 px-4 py-2 bg-[#222] rounded-lg hover:bg-[#333] transition-colors"
+            >
+              <Filter className="w-5 h-5" />
+              <span>Filters</span>
+              {showFilters ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+            </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

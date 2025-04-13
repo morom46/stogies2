@@ -1,101 +1,158 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-
-interface CartItem {
-  id: number;
-  name: string;
-  price: number;
-  quantity: number;
-  category: string;
-  description: string;
-  image: string;
-  rating?: number;
-  origin?: string;
-}
-
-interface CartContextType {
-  cartItems: CartItem[];
-  cartCount: number;
-  addToCart: (item: CartItem) => void;
-  updateQuantity: (itemId: number, change: number) => void;
-  removeItem: (itemId: number) => void;
-  removeAll: () => void;
-}
+import { CartContextType, CartItem, MAX_ITEM_QUANTITY } from '../types/cart';
+import { CartStorageService } from '../services/cartStorageService';
+import { useCurrency } from './CurrencyContext';
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [cartCount, setCartCount] = useState(0);
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPrice, setTotalPrice] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [lastUpdated, setLastUpdated] = useState(Date.now());
+  
+  const { convertPrice } = useCurrency();
+  const cartStorage = CartStorageService.getInstance();
 
   useEffect(() => {
-    // Load cart items from localStorage on initial load
-    const savedCart = localStorage.getItem('cart');
-    if (savedCart) {
-      const parsedCart = JSON.parse(savedCart);
-      setCartItems(parsedCart);
-      setCartCount(parsedCart.reduce((total: number, item: CartItem) => total + item.quantity, 0));
-    }
+    const loadCart = () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const savedCart = cartStorage.loadCart();
+        
+        if (savedCart) {
+          setItems(savedCart.items);
+          setTotalItems(savedCart.totalItems);
+          setTotalPrice(savedCart.totalPrice);
+          setLastUpdated(savedCart.lastUpdated);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Failed to load cart'));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadCart();
   }, []);
 
   useEffect(() => {
-    // Save cart items to localStorage whenever they change
-    localStorage.setItem('cart', JSON.stringify(cartItems));
-    setCartCount(cartItems.reduce((total, item) => total + item.quantity, 0));
-  }, [cartItems]);
+    try {
+      const newTotalItems = items.reduce((total, item) => total + item.quantity, 0);
+      const newTotalPrice = items.reduce((total, item) => total + (convertPrice(item.price) * item.quantity), 0);
+      
+      setTotalItems(newTotalItems);
+      setTotalPrice(newTotalPrice);
+      
+      if (items.length > 0) {
+        cartStorage.saveCart({
+          items,
+          totalItems: newTotalItems,
+          totalPrice: newTotalPrice,
+          lastUpdated: Date.now(),
+        });
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to update cart'));
+    }
+  }, [items, convertPrice]);
 
   const addToCart = (item: CartItem) => {
-    setCartItems(prevItems => {
-      // Find if the item already exists in the cart
-      const existingItemIndex = prevItems.findIndex(i => i.id === item.id);
-      
-      if (existingItemIndex !== -1) {
-        // If item exists, update its quantity
-        const updatedItems = [...prevItems];
-        updatedItems[existingItemIndex] = {
-          ...updatedItems[existingItemIndex],
-          quantity: updatedItems[existingItemIndex].quantity + (item.quantity || 1)
-        };
-        return updatedItems;
-      } else {
-        // If item is new, add it with the specified quantity or default to 1
-        return [...prevItems, {
-          ...item,
-          quantity: item.quantity || 1
-        }];
-      }
-    });
+    try {
+      setItems(prevItems => {
+        const existingItemIndex = prevItems.findIndex(i => i.id === item.id);
+        
+        if (existingItemIndex !== -1) {
+          const updatedItems = [...prevItems];
+          const newQuantity = updatedItems[existingItemIndex].quantity + (item.quantity || 1);
+          
+          if (newQuantity > MAX_ITEM_QUANTITY) {
+            throw new Error(`Maximum quantity of ${MAX_ITEM_QUANTITY} reached for ${item.name}`);
+          }
+          
+          updatedItems[existingItemIndex] = {
+            ...updatedItems[existingItemIndex],
+            quantity: newQuantity
+          };
+          return updatedItems;
+        } else {
+          if ((item.quantity || 1) > MAX_ITEM_QUANTITY) {
+            throw new Error(`Maximum quantity of ${MAX_ITEM_QUANTITY} reached for ${item.name}`);
+          }
+          
+          return [...prevItems, {
+            ...item,
+            quantity: item.quantity || 1
+          }];
+        }
+      });
+      setLastUpdated(Date.now());
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to add item to cart'));
+      throw err;
+    }
   };
 
   const updateQuantity = (itemId: number, change: number) => {
-    setCartItems(prevItems => {
-      const updatedItems = prevItems.map(item =>
-        item.id === itemId
-          ? { ...item, quantity: Math.max(0, item.quantity + change) }
-          : item
-      );
-      return updatedItems.filter(item => item.quantity > 0);
-    });
+    try {
+      setItems(prevItems => {
+        const updatedItems = prevItems.map(item => {
+          if (item.id === itemId) {
+            const newQuantity = Math.max(0, Math.min(item.quantity + change, MAX_ITEM_QUANTITY));
+            if (newQuantity === 0) return null;
+            return { ...item, quantity: newQuantity };
+          }
+          return item;
+        }).filter(Boolean) as CartItem[];
+        
+        return updatedItems;
+      });
+      setLastUpdated(Date.now());
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to update item quantity'));
+      throw err;
+    }
   };
 
   const removeItem = (itemId: number) => {
-    setCartItems(prevItems => prevItems.filter(item => item.id !== itemId));
+    try {
+      setItems(prevItems => prevItems.filter(item => item.id !== itemId));
+      setLastUpdated(Date.now());
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to remove item from cart'));
+      throw err;
+    }
   };
 
   const removeAll = () => {
-    setCartItems([]);
+    try {
+      setItems([]);
+      cartStorage.clearCart();
+      setLastUpdated(Date.now());
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to clear cart'));
+      throw err;
+    }
+  };
+
+  const value = {
+    items,
+    totalItems,
+    totalPrice,
+    addToCart,
+    updateQuantity,
+    removeItem,
+    removeAll,
+    isLoading,
+    error,
+    lastUpdated,
   };
 
   return (
-    <CartContext.Provider
-      value={{
-        cartItems,
-        cartCount,
-        addToCart,
-        updateQuantity,
-        removeItem,
-        removeAll,
-      }}
-    >
+    <CartContext.Provider value={value}>
       {children}
     </CartContext.Provider>
   );

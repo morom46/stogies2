@@ -12,6 +12,8 @@ import { CurrencyProvider } from './contexts/CurrencyContext';
 import { CartProvider, useCart } from './contexts/CartContext';
 import Footer from './components/Footer';
 import ProductDetail from './ProductDetail';
+import ErrorBoundary from './components/ErrorBoundary';
+import CartIcon from './components/CartIcon';
 
 // Add price formatting helper
 const formatPrice = (price: number) => {
@@ -97,23 +99,6 @@ const CartCountAnimation: React.FC<{ count: number }> = ({ count }) => {
     >
       {count}
     </motion.div>
-  );
-};
-
-const CartIcon: React.FC<{ count: number }> = ({ count }) => {
-  return (
-    <Link to="/cart" className="relative group">
-      <motion.div
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        className="relative"
-      >
-        <ShoppingCart className="w-6 h-6 text-gray-300 group-hover:text-amber-500 transition-colors" />
-        <AnimatePresence mode="wait">
-          {count > 0 && <CartCountAnimation count={count} />}
-        </AnimatePresence>
-      </motion.div>
-    </Link>
   );
 };
 
@@ -576,80 +561,93 @@ function App() {
   };
 
   return (
-    <CartProvider>
+    <ErrorBoundary>
       <CurrencyProvider>
-        <Router>
-          <div className="min-h-screen bg-[#1a1a1a] text-white">
-            {/* Navbar */}
-            <nav className="fixed top-0 left-0 right-0 bg-[#111] z-50 shadow-lg">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between h-16">
-                  <div className="flex items-center space-x-4">
-                    <Link to="/" className="flex items-center space-x-2">
-                      <img src="/logo.png" alt="Stogie's" className="h-8 w-8 rounded-full shadow-md" />
-                    </Link>
-                    <h1 className="text-xl font-bold tracking-wider">STOGIE'S</h1>
-                  </div>
-                  <div className="flex items-center space-x-8">
-                    <div className="hidden md:flex items-center space-x-8">
-                      <Link to="/products" className="text-gray-300 hover:text-amber-500 transition-colors text-sm uppercase tracking-widest font-medium">Products</Link>
-                      <Link to="/accessories" className="text-gray-300 hover:text-amber-500 transition-colors text-sm uppercase tracking-widest font-medium">Accessories</Link>
+        <CartProvider>
+          <Router>
+            <div className="min-h-screen bg-[#1a1a1a] text-white">
+              {/* Navbar */}
+              <ErrorBoundary>
+                <nav className="fixed top-0 left-0 right-0 bg-[#111] z-50 shadow-lg">
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center justify-between h-16">
+                      <div className="flex items-center space-x-4">
+                        <Link to="/" className="flex items-center space-x-2 hover:text-amber-500 transition-colors">
+                          <img src="/logo.png" alt="Stogie's" className="h-8 w-8 rounded-full shadow-md" />
+                          <h1 className="text-xl font-bold tracking-wider">STOGIE'S</h1>
+                        </Link>
+                      </div>
+                      <div className="flex items-center space-x-8">
+                        <div className="hidden md:flex items-center space-x-8">
+                          <Link to="/products" className="text-gray-300 hover:text-amber-500 transition-colors text-sm uppercase tracking-widest font-medium">Products</Link>
+                          <Link to="/accessories" className="text-gray-300 hover:text-amber-500 transition-colors text-sm uppercase tracking-widest font-medium">Accessories</Link>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                          <Link to="/cart" className="relative">
+                            <CartIcon />
+                          </Link>
+                          <button
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                            className="md:hidden p-2 text-gray-300 hover:text-amber-500 transition-colors"
+                          >
+                            <Menu className="w-6 h-6" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-4">
-                      <CartIcon count={cartCount} />
-                      <button
-                        onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        className="md:hidden p-2 text-gray-300 hover:text-amber-500 transition-colors"
+                  </div>
+                  {/* Mobile Menu */}
+                  <AnimatePresence>
+                    {isMenuOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="md:hidden bg-[#111]"
                       >
-                        <Menu className="w-6 h-6" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {/* Mobile Menu */}
-              <AnimatePresence>
-                {isMenuOpen && (
+                        <div className="px-4 py-2 space-y-2">
+                          <Link to="/products" className="block text-gray-300 hover:text-amber-500 transition-colors text-sm uppercase tracking-widest font-medium">Products</Link>
+                          <Link to="/accessories" className="block text-gray-300 hover:text-amber-500 transition-colors text-sm uppercase tracking-widest font-medium">Accessories</Link>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </nav>
+              </ErrorBoundary>
+
+              {/* Floating Currency Selector */}
+              <ErrorBoundary>
+                <div className="fixed bottom-4 right-4 z-50">
                   <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="md:hidden bg-[#111]"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="bg-[#111] rounded-full p-2 shadow-lg"
                   >
-                    <div className="px-4 py-2 space-y-2">
-                      <Link to="/products" className="block text-gray-300 hover:text-amber-500 transition-colors text-sm uppercase tracking-widest font-medium">Products</Link>
-                      <Link to="/accessories" className="block text-gray-300 hover:text-amber-500 transition-colors text-sm uppercase tracking-widest font-medium">Accessories</Link>
-                    </div>
+                    <CurrencySelector />
                   </motion.div>
-                )}
-              </AnimatePresence>
-            </nav>
+                </div>
+              </ErrorBoundary>
 
-            {/* Floating Currency Selector */}
-            <div className="fixed bottom-4 right-4 z-50">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className="bg-[#111] rounded-full p-2 shadow-lg"
-              >
-                <CurrencySelector />
-              </motion.div>
+              <ErrorBoundary>
+                <Routes>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/products" element={<ProductCatalog />} />
+                  <Route path="/products/:id" element={<ProductDetail />} />
+                  <Route path="/accessories" element={<AccessoriesCatalog />} />
+                  <Route path="/cart" element={<CartPage />} />
+                  <Route path="/wishlist" element={<WishlistPage />} />
+                </Routes>
+              </ErrorBoundary>
+
+              <ErrorBoundary>
+                <CartToast isVisible={showToast} message={toastMessage} />
+              </ErrorBoundary>
             </div>
-
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/products" element={<ProductCatalog />} />
-              <Route path="/products/:id" element={<ProductDetail />} />
-              <Route path="/accessories" element={<AccessoriesCatalog />} />
-              <Route path="/cart" element={<CartPage />} />
-              <Route path="/wishlist" element={<WishlistPage />} />
-            </Routes>
-            <CartToast isVisible={showToast} message={toastMessage} />
-          </div>
-        </Router>
+          </Router>
+        </CartProvider>
       </CurrencyProvider>
-    </CartProvider>
+    </ErrorBoundary>
   );
 }
 

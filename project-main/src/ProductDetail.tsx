@@ -121,10 +121,10 @@ const ProductDetail: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
-              <Link to="/" className="flex items-center space-x-2">
+              <Link to="/" className="flex items-center space-x-2 hover:text-amber-500 transition-colors">
                 <img src="/logo.png" alt="Stogie's" className="h-8 w-8 rounded-full shadow-md" />
+                <h1 className="text-xl font-bold tracking-wider">STOGIE'S</h1>
               </Link>
-              <h1 className="text-xl font-bold tracking-wider">STOGIE'S</h1>
             </div>
             <div className="flex items-center space-x-4">
               <Link to="/products" className="text-gray-300 hover:text-amber-500 transition-colors tracking-widest font-medium">

@@ -1,19 +1,20 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
-import { ChevronRight, Search, Filter, ShoppingCart, Check, Package, Plus, Minus, Star, Heart, ChevronLeft } from 'lucide-react';
+import { ChevronRight, Search, Filter, ShoppingCart, Check, Package, Plus, Minus, Star, Heart, ChevronLeft, ChevronDown, ChevronUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useCurrency } from './contexts/CurrencyContext';
 import { useCart } from './contexts/CartContext';
 import Footer from './components/Footer';
+import CartIcon from './components/CartIcon';
 
 // Add price formatting helper
-const formatPrice = (price: number) => {
+const formatPrice = (price: number): string => {
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
     minimumFractionDigits: 0,
-    maximumFractionDigits: 0
+    maximumFractionDigits: 0,
   }).format(price);
 };
 
@@ -35,38 +36,27 @@ function FadeInSection({ children }: { children: React.ReactNode }) {
   );
 }
 
-function CartIcon({ count }: { count: number }) {
-  return (
-    <Link to="/cart" className="relative">
-      <ShoppingCart className="w-6 h-6 text-gray-300 hover:text-amber-500 transition-colors" />
-      {count > 0 && (
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          className="absolute -top-2 -right-2 bg-amber-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
-        >
-          {count}
-        </motion.div>
-      )}
-    </Link>
-  );
-}
-
 interface Accessory {
   id: number;
   name: string;
-  price: number;
-  category: string;
   description: string;
+  price: number;
   image: string;
+  category: string;
+  rating: number;
+  reviews: number;
+  inStock: boolean;
 }
 
 const AccessoriesCatalog: React.FC = () => {
-  const { formatPrice } = useCurrency();
-  const { cartCount, addToCart } = useCart();
+  const { formatPrice: formatCurrency } = useCurrency();
+  const { addToCart, items: cartItems } = useCart();
+  const [showFilters, setShowFilters] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<string>('default');
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [addedToCart, setAddedToCart] = useState<number | null>(null);
   const itemsPerPage = 9;
 
@@ -74,58 +64,76 @@ const AccessoriesCatalog: React.FC = () => {
     {
       id: 1,
       name: "Premium Cigar Cutter",
-      price: 1500,
-      category: "cutters",
       description: "Professional-grade cigar cutter with stainless steel blades",
-      image: "/accessories/cutter.jpg"
+      price: 2499,
+      image: "/accessories/cutter.jpg",
+      category: "Cutters",
+      rating: 4.8,
+      reviews: 45,
+      inStock: true
     },
     {
       id: 2,
       name: "Leather Cigar Case",
-      price: 2500,
-      category: "cases",
       description: "Handcrafted leather case for 3 cigars",
-      image: "/accessories/case.jpg"
+      price: 3499,
+      image: "/accessories/case.jpg",
+      category: "Cases",
+      rating: 4.9,
+      reviews: 32,
+      inStock: true
     },
     {
       id: 3,
-      name: "Butane Torch Lighter",
-      price: 1200,
-      category: "lighters",
-      description: "Windproof butane torch with adjustable flame",
-      image: "/accessories/lighter.jpg"
+      name: "Humidor",
+      description: "Spanish cedar humidor with digital hygrometer",
+      price: 12999,
+      image: "/accessories/humidor.jpg",
+      category: "Humidors",
+      rating: 4.7,
+      reviews: 28,
+      inStock: true
     },
     {
       id: 4,
-      name: "Humidor",
-      price: 5000,
-      category: "humidors",
-      description: "Spanish cedar humidor with digital hygrometer",
-      image: "/accessories/humidor.jpg"
+      name: "Butane Torch Lighter",
+      description: "Windproof torch lighter with adjustable flame",
+      price: 1999,
+      image: "/accessories/lighter.jpg",
+      category: "Lighters",
+      rating: 4.6,
+      reviews: 56,
+      inStock: true
     },
     {
       id: 5,
-      name: "Cigar Ashtray",
-      price: 1800,
-      category: "ashtrays",
-      description: "Crystal ashtray with cigar rests",
-      image: "/accessories/ashtray.jpg"
+      name: "Cedar Spills",
+      description: "Box of 50 premium cedar spills for lighting cigars",
+      price: 999,
+      image: "/accessories/spills.jpg",
+      category: "Lighting",
+      rating: 4.5,
+      reviews: 23,
+      inStock: true
     },
     {
       id: 6,
-      name: "Travel Humidor",
-      price: 3500,
-      category: "humidors",
-      description: "Portable humidor for 5 cigars",
-      image: "/accessories/travel-humidor.jpg"
+      name: "Cigar Rest",
+      description: "Elegant ashtray with cigar rest",
+      price: 2999,
+      image: "/accessories/rest.jpg",
+      category: "Ashtrays",
+      rating: 4.8,
+      reviews: 19,
+      inStock: true
     }
   ];
 
-  const categories = ['all', 'cutters', 'cases', 'lighters', 'humidors', 'ashtrays'];
+  const categories = ['all', ...new Set(accessories.map(item => item.category))];
 
-  const filteredAccessories = selectedCategory === 'all'
-    ? accessories
-    : accessories.filter(accessory => accessory.category === selectedCategory);
+  const filteredAccessories = accessories.filter(item => 
+    selectedCategory === 'all' || item.category === selectedCategory
+  );
 
   const sortedAccessories = [...filteredAccessories].sort((a, b) => {
     switch (sortBy) {
@@ -142,12 +150,16 @@ const AccessoriesCatalog: React.FC = () => {
 
   const totalPages = Math.ceil(sortedAccessories.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentAccessories = sortedAccessories.slice(startIndex, endIndex);
+  const paginatedAccessories = sortedAccessories.slice(startIndex, startIndex + itemsPerPage);
 
   const handleAddToCart = (accessory: Accessory) => {
     addToCart({
-      ...accessory,
+      id: accessory.id,
+      name: accessory.name,
+      price: accessory.price,
+      image: accessory.image,
+      category: accessory.category,
+      description: accessory.description,
       quantity: 1
     });
     setAddedToCart(accessory.id);
@@ -161,10 +173,10 @@ const AccessoriesCatalog: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
-              <Link to="/" className="flex items-center space-x-2">
+              <Link to="/" className="flex items-center space-x-2 hover:text-amber-500 transition-colors">
                 <img src="/logo.png" alt="Stogie's" className="h-8 w-8 rounded-full shadow-md" />
+                <h1 className="text-xl font-bold tracking-wider">STOGIE'S</h1>
               </Link>
-              <h1 className="text-xl font-bold">STOGIE'S</h1>
             </div>
             <div className="flex items-center space-x-4">
               <Link to="/products" className="text-gray-300 hover:text-amber-500 transition-colors tracking-widest font-medium">
@@ -174,16 +186,7 @@ const AccessoriesCatalog: React.FC = () => {
                 Accessories
               </Link>
               <Link to="/cart" className="relative">
-                <ShoppingCart className="w-6 h-6 text-gray-300 hover:text-amber-500 transition-colors" />
-                {cartCount > 0 && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute -top-2 -right-2 bg-amber-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
-                  >
-                    {cartCount}
-                  </motion.div>
-                )}
+                <CartIcon />
               </Link>
             </div>
           </div>
@@ -193,7 +196,20 @@ const AccessoriesCatalog: React.FC = () => {
       {/* Main Content */}
       <div className="pt-20 pb-12 px-4 flex-grow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <h1 className="text-3xl font-bold mb-8">Accessories</h1>
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold">Accessories</h1>
+            <div className="flex items-center space-x-4">
+              <span className="text-gray-400">Items in cart: {cartItems.length}</span>
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center space-x-2 px-4 py-2 bg-[#222] rounded-lg hover:bg-[#333] transition-colors"
+              >
+                <Filter className="w-5 h-5" />
+                <span>Filters</span>
+                {showFilters ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+              </button>
+            </div>
+          </div>
           
           {/* Category Filter and Sort */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
@@ -231,39 +247,61 @@ const AccessoriesCatalog: React.FC = () => {
             </div>
           </div>
 
-          {/* Product Grid */}
+          {/* Accessories Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {currentAccessories.map((accessory) => (
+            {paginatedAccessories.map((accessory) => (
               <motion.div
                 key={accessory.id}
-                className="bg-[#222] rounded-lg overflow-hidden hover:transform hover:scale-105 transition-all duration-300 border border-[#333]"
+                className="bg-[#222] rounded-lg overflow-hidden shadow-lg"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
+                transition={{ duration: 0.3 }}
               >
-                <div className="aspect-square w-full bg-[#1a1a1a] flex items-center justify-center border-b border-[#333]">
-                  <img 
-                    src={accessory.image} 
+                <div className="relative">
+                  <img
+                    src={accessory.image}
                     alt={accessory.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-48 object-cover"
                   />
+                  {!accessory.inStock && (
+                    <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded text-sm">
+                      Out of Stock
+                    </div>
+                  )}
                 </div>
                 <div className="p-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h3 className="text-lg font-semibold mb-1">{accessory.name}</h3>
-                      <p className="text-amber-500 font-bold text-base">{formatPrice(accessory.price)}</p>
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-lg font-semibold">{accessory.name}</h3>
+                    <div className="flex items-center">
+                      <Star className="w-4 h-4 text-amber-500 fill-current" />
+                      <span className="ml-1 text-sm">{accessory.rating}</span>
                     </div>
                   </div>
-                  <p className="text-gray-400 text-sm mb-3">{accessory.description}</p>
-                  <motion.button
-                    className="w-full py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm border border-amber-600"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => handleAddToCart(accessory)}
-                  >
-                    Add to Cart
-                  </motion.button>
+                  <p className="text-gray-400 text-sm mb-4">{accessory.description}</p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-amber-500 font-bold">{formatCurrency(accessory.price)}</span>
+                    <button
+                      onClick={() => handleAddToCart(accessory)}
+                      disabled={!accessory.inStock}
+                      className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                        accessory.inStock
+                          ? 'bg-amber-500 hover:bg-amber-600'
+                          : 'bg-gray-600 cursor-not-allowed'
+                      }`}
+                    >
+                      {addedToCart === accessory.id ? (
+                        <>
+                          <Check className="w-5 h-5" />
+                          <span>Added</span>
+                        </>
+                      ) : (
+                        <>
+                          <ShoppingCart className="w-5 h-5" />
+                          <span>Add to Cart</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             ))}
