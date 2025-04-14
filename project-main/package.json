@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://arindamroy2002.github.io/stogies",
+  "homepage": "https://github.com/morom46/stogies",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
