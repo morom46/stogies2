@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://github.com/morom46/stogies",
+  "homepage": "https://stogies-14mmv5vdw-morom46s-projects.vercel.app",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
