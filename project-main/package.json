@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://stogies-14mmv5vdw-morom46s-projects.vercel.app",
+  "homepage": "https://stogies.vercel.app",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -16,8 +16,6 @@
     "@vercel/speed-insights": "^1.2.0",
     "framer-motion": "^11.0.3",
     "lucide-react": "^0.344.0",
-    "mongoose": "^8.1.3",
-    "razorpay": "^2.9.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-intersection-observer": "^9.8.1",
