@@ -1,12 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { CURRENCIES } from '../types/currency';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 const CurrencySelector: React.FC = () => {
   const { currency, setCurrency, isLoading, error } = useCurrency();
+  const [isOpen, setIsOpen] = useState(false);
 
-  const handleCurrencyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setCurrency(e.target.value as keyof typeof CURRENCIES);
+  const handleCurrencyChange = (newCurrency: keyof typeof CURRENCIES) => {
+    setCurrency(newCurrency);
+    setIsOpen(false);
   };
 
   if (error) {
@@ -19,33 +22,40 @@ const CurrencySelector: React.FC = () => {
 
   return (
     <div className="relative">
-      <select
-        value={currency}
-        onChange={handleCurrencyChange}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
         disabled={isLoading}
-        className="appearance-none bg-transparent text-white border border-gray-700 rounded-lg px-3 py-1 pr-8 focus:outline-none focus:border-amber-500 transition-colors cursor-pointer"
+        className="flex items-center gap-1 px-2 py-1 text-sm text-gray-300 hover:text-white transition-colors"
       >
-        {Object.entries(CURRENCIES).map(([code, info]) => (
-          <option key={code} value={code} className="bg-gray-900 text-white">
-            {info.symbol} {code}
-          </option>
-        ))}
-      </select>
-      <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
-        <svg
-          className="w-4 h-4 text-gray-400"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
-      </div>
+        <span>{CURRENCIES[currency].symbol}</span>
+        <span className="text-xs">{currency}</span>
+        {isOpen ? (
+          <ChevronUp className="w-3 h-3 transition-transform" />
+        ) : (
+          <ChevronDown className="w-3 h-3 transition-transform" />
+        )}
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 bottom-full mb-1 w-40 bg-gray-900/95 backdrop-blur-sm rounded-lg shadow-lg border border-gray-800 overflow-hidden">
+          <div className="max-h-32 overflow-y-auto">
+            {Object.entries(CURRENCIES).map(([code, info]) => (
+              <button
+                key={code}
+                onClick={() => handleCurrencyChange(code as keyof typeof CURRENCIES)}
+                className={`w-full px-3 py-2 text-sm text-left flex items-center gap-2 hover:bg-gray-800/50 transition-colors ${
+                  currency === code ? 'text-amber-500' : 'text-gray-300'
+                }`}
+              >
+                <span className="w-6 text-right">{info.symbol}</span>
+                <span className="flex-1">{code}</span>
+                <span className="text-xs text-gray-500">{info.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
