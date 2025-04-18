@@ -3,32 +3,26 @@
   "builds": [
     {
       "src": "package.json",
-      "use": "@vercel/static-build",
+      "use": "@vercel/node",
       "config": {
-        "distDir": "dist",
-        "buildCommand": "npm install --global vite && npm run build",
-        "installCommand": "npm install"
+        "buildCommand": "npm install --no-save vite && npm run build",
+        "outputDirectory": "dist"
       }
     }
   ],
-  "outputDirectory": "dist",
-  "framework": "vite",
   "routes": [
-    {
-      "src": "/assets/(.*)",
-      "headers": {
-        "cache-control": "public, max-age=31536000, immutable"
-      }
-    },
     {
       "handle": "filesystem"
     },
     {
-      "src": "/(.*)",
-      "dest": "/index.html",
+      "src": "/assets/(.*)",
       "headers": {
-        "cache-control": "public, max-age=0, must-revalidate"
+        "cache-control": "max-age=31536000"
       }
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
