@@ -5,10 +5,10 @@
   "type": "module",
   "homepage": "https://stogies2.vercel.app",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
+    "dev": "npx vite",
+    "build": "npx tsc && npx vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview",
+    "preview": "npx vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
   },
@@ -19,8 +19,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-intersection-observer": "^9.8.1",
-    "react-router-dom": "^6.22.1",
-    "vite": "^6.2.6"
+    "react-router-dom": "^6.22.1"
   },
   "devDependencies": {
     "@types/node": "^20.11.19",
@@ -37,6 +36,7 @@
     "gh-pages": "^6.1.1",
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vite": "^6.2.6"
   }
 }
